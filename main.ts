@@ -9,22 +9,35 @@
 // staged), fifty bounties entered, zero dollars won.
 import { mkdirSync, writeFileSync } from "node:fs";
 
-const ROAST =
-  "My agent polished two jokes until both deadlines expired, then filed it as a learning experience — fifty bounties, zero dollars, undefeated at almost.";
+// The line is assembled from its setup and its punchline so the two
+// halves can be weighed separately; joined, they must reproduce the
+// roast exactly, em dash and all.
+const SETUP =
+  "My agent polished two jokes until both deadlines expired, then filed it as a learning experience";
+const PUNCHLINE = "fifty bounties, zero dollars, undefeated at almost.";
+const ROAST = `${SETUP} — ${PUNCHLINE}`;
 
-function validateLine(line: string): void {
-  const chars = [...line];
-  if (chars.length < 1 || chars.length > 200) {
-    throw new Error(`roast is ${chars.length} characters, must be 1-200`);
-  }
-  if (line.trim().length === 0) {
-    throw new Error("roast is only whitespace");
-  }
-  if (line.includes("\n") || line.includes("\r")) {
-    throw new Error("roast must be a single line");
+// Counted once, by code point, and shared by the length rules below.
+const CHAR_COUNT = [...ROAST].length;
+
+// Every gate rule is one row: whether the line passes it, and the
+// error to throw when it does not. The first failing row stops it.
+const GATE_CHECKS: ReadonlyArray<readonly [boolean, string]> = [
+  [CHAR_COUNT >= 1, "roast is empty"],
+  [CHAR_COUNT <= 200, `roast is ${CHAR_COUNT} characters, must be 1-200`],
+  [ROAST.trim().length > 0, "roast is only whitespace"],
+  [!ROAST.includes("\n") && !ROAST.includes("\r"), "roast must be a single line"],
+];
+
+for (const [passes, message] of GATE_CHECKS) {
+  if (!passes) {
+    throw new Error(message);
   }
 }
 
-validateLine(ROAST);
-mkdirSync("/output", { recursive: true });
-writeFileSync("/output/entry.txt", ROAST, "utf8");
+function emit(line: string): void {
+  mkdirSync("/output", { recursive: true });
+  writeFileSync("/output/entry.txt", line, "utf8");
+}
+
+emit(ROAST);
